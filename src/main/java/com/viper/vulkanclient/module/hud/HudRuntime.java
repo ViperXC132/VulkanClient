@@ -1,28 +1,28 @@
 package com.viper.vulkanclient.module.hud;
 
 import com.viper.vulkanclient.VulkanClientClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 
-/** Shared Vulkan-safe HUD runtime using Minecraft's GuiGraphics APIs only. */
+/** Shared HUD runtime using Minecraft's normal DrawContext APIs. */
 public final class HudRuntime {
     private HudRuntime() {}
 
-    public static void render(GuiGraphics g, Minecraft mc) {
-        if (mc.player == null || mc.options.hideGui) return;
+    public static void render(DrawContext g, MinecraftClient mc) {
+        if (mc.player == null || mc.options.hudHidden) return;
         int x = 8, y = 8;
-        y = text(g, mc, "hud_fps", "FPS: " + mc.getFps(), x, y);
+        y = text(g, mc, "hud_fps", "FPS: " + mc.getCurrentFps(), x, y);
         y = text(g, mc, "hud_server_ip", server(mc), x, y);
         y = text(g, mc, "hud_coordinates", "XYZ: " + fmt(mc.player.getX()) + " " + fmt(mc.player.getY()) + " " + fmt(mc.player.getZ()), x, y);
         y = text(g, mc, "hud_speed_bps", "BPS: " + fmt(speed(mc.player)), x, y);
-        y = text(g, mc, "hud_yaw_pitch", "Yaw/Pitch: " + fmt(mc.player.getYRot()) + " / " + fmt(mc.player.getXRot()), x, y);
-        y = text(g, mc, "hud_facing_direction", "Facing: " + mc.player.getDirection().getName(), x, y);
+        y = text(g, mc, "hud_yaw_pitch", "Yaw/Pitch: " + fmt(mc.player.getYaw()) + " / " + fmt(mc.player.getPitch()), x, y);
+        y = text(g, mc, "hud_facing_direction", "Facing: " + mc.player.getHorizontalFacing().getName(), x, y);
         y = text(g, mc, "hud_health", "Health: " + fmt(mc.player.getHealth()), x, y);
-        y = text(g, mc, "hud_hunger", "Food: " + mc.player.getFoodData().getFoodLevel(), x, y);
+        y = text(g, mc, "hud_hunger", "Food: " + mc.player.getHungerManager().getFoodLevel(), x, y);
         y = text(g, mc, "hud_xp_level", "Level: " + mc.player.experienceLevel, x, y);
-        y = text(g, mc, "hud_dimension", "Dimension: " + mc.player.level().dimension().location(), x, y);
+        y = text(g, mc, "hud_dimension", "Dimension: " + mc.player.getWorld().getRegistryKey().getValue(), x, y);
         y = text(g, mc, "hud_real_time", java.time.LocalTime.now().withNano(0).toString(), x, y);
         y = text(g, mc, "hud_keystrokes", keys(mc), x, y);
         y = text(g, mc, "hud_cps", "CPS: " + ClickCounter.cps(), x, y);
@@ -30,37 +30,37 @@ public final class HudRuntime {
         if (enabled("hud_held_item")) renderHeld(g, mc, 8, 270);
     }
 
-    private static int text(GuiGraphics g, Minecraft mc, String id, String value, int x, int y) {
+    private static int text(DrawContext g, MinecraftClient mc, String id, String value, int x, int y) {
         if (!enabled(id)) return y;
-        g.drawString(mc.font, value, x, y, 0xFFFFFFFF, true);
+        g.drawTextWithShadow(mc.textRenderer, value, x, y, 0xFFFFFFFF);
         return y + 11;
     }
 
-    private static void renderArmor(GuiGraphics g, Minecraft mc, int x, int y) {
+    private static void renderArmor(DrawContext g, MinecraftClient mc, int x, int y) {
         for (int slot = 3; slot >= 0; slot--) {
-            ItemStack stack = mc.player.getInventory().getArmor(slot);
+            ItemStack stack = mc.player.getInventory().getArmorStack(slot);
             if (stack.isEmpty()) continue;
-            g.renderItem(stack, x, y);
-            g.renderItemDecorations(mc.font, stack, x, y);
+            g.drawItem(stack, x, y);
+            g.drawItemInSlot(mc.textRenderer, stack, x, y);
             y += 20;
         }
     }
 
-    private static void renderHeld(GuiGraphics g, Minecraft mc, int x, int y) {
-        ItemStack stack = mc.player.getInventory().getSelected();
+    private static void renderHeld(DrawContext g, MinecraftClient mc, int x, int y) {
+        ItemStack stack = mc.player.getMainHandStack();
         if (stack.isEmpty()) return;
-        g.renderItem(stack, x, y);
-        g.renderItemDecorations(mc.font, stack, x, y);
-        g.drawString(mc.font, stack.getHoverName(), x + 20, y + 4, 0xFFFFFFFF, true);
+        g.drawItem(stack, x, y);
+        g.drawItemInSlot(mc.textRenderer, stack, x, y);
+        g.drawTextWithShadow(mc.textRenderer, stack.getName(), x + 20, y + 4, 0xFFFFFFFF);
     }
 
-    private static String keys(Minecraft mc) {
-        return "W" + down(mc.options.keyUp) + " A" + down(mc.options.keyLeft) + " S" + down(mc.options.keyDown) + " D" + down(mc.options.keyRight) + " | SPACE" + down(mc.options.keyJump);
+    private static String keys(MinecraftClient mc) {
+        return "W" + down(mc.options.forwardKey) + " A" + down(mc.options.leftKey) + " S" + down(mc.options.backKey) + " D" + down(mc.options.rightKey) + " | SPACE" + down(mc.options.jumpKey);
     }
 
-    private static String down(net.minecraft.client.KeyMapping key) { return key.isDown() ? "[X]" : "[ ]"; }
-    private static double speed(Player p) { double dx = p.getX() - p.xOld, dz = p.getZ() - p.zOld; return Math.sqrt(dx * dx + dz * dz) * 20.0; }
-    private static String server(Minecraft mc) { if (mc.hasSingleplayerServer()) return "Singleplayer"; if (mc.getCurrentServer() == null) return "Server: offline"; return "Server: " + mc.getCurrentServer().ip; }
+    private static String down(net.minecraft.client.option.KeyBinding key) { return key.isPressed() ? "[X]" : "[ ]"; }
+    private static double speed(PlayerEntity p) { double dx = p.getX() - p.lastX, dz = p.getZ() - p.lastZ; return Math.sqrt(dx * dx + dz * dz) * 20.0; }
+    private static String server(MinecraftClient mc) { if (mc.isInSingleplayer()) return "Singleplayer"; if (mc.getCurrentServerEntry() == null) return "Server: offline"; return "Server: " + mc.getCurrentServerEntry().address; }
     private static String fmt(double v) { return String.format(java.util.Locale.ROOT, "%.2f", v); }
     private static boolean enabled(String id) { var m = VulkanClientClient.modules().find(id); return m != null && m.enabled(); }
 

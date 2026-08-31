@@ -38,10 +38,10 @@ public final class HudRuntime {
 
     private static void renderArmor(DrawContext g, MinecraftClient mc, int x, int y) {
         for (int slot = 3; slot >= 0; slot--) {
-            ItemStack stack = mc.player.getInventory().armor.get(slot);
+            ItemStack stack = mc.player.getInventory().getArmorStack(slot);
             if (stack.isEmpty()) continue;
             g.drawItem(stack, x, y);
-            g.drawItemInSlot(mc.textRenderer, stack, x, y);
+            g.drawStackOverlay(mc.textRenderer, stack, x, y);
             y += 20;
         }
     }
@@ -50,7 +50,7 @@ public final class HudRuntime {
         ItemStack stack = mc.player.getMainHandStack();
         if (stack.isEmpty()) return;
         g.drawItem(stack, x, y);
-        g.drawItemInSlot(mc.textRenderer, stack, x, y);
+        g.drawStackOverlay(mc.textRenderer, stack, x, y);
         g.drawTextWithShadow(mc.textRenderer, stack.getName(), x + 20, y + 4, 0xFFFFFFFF);
     }
 

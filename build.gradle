@@ -29,10 +29,13 @@ dependencies {
     modCompileOnly "maven.modrinth:vulkanmod:${vulkanmod_version}"
 }
 
+def modVersion = project.version
+def archiveName = project.archives_base_name
+
 processResources {
-    inputs.property 'version', project.version
+    inputs.property 'version', modVersion
     filesMatching('fabric.mod.json') {
-        expand 'version': project.version
+        expand 'version': modVersion
     }
 }
 
@@ -47,7 +50,7 @@ java {
 }
 
 jar {
-    from('LICENSE') { rename { "${it}_${archives_base_name}" } }
+    from('LICENSE') { rename { "${it}_${archiveName}" } }
 }
 
 publishing {

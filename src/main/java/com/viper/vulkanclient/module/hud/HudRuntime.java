@@ -3,6 +3,7 @@ package com.viper.vulkanclient.module.hud;
 import com.viper.vulkanclient.VulkanClientClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 
@@ -37,8 +38,17 @@ public final class HudRuntime {
     }
 
     private static void renderArmor(DrawContext g, MinecraftClient mc, int x, int y) {
-        for (int slot = 3; slot >= 0; slot--) {
-            ItemStack stack = mc.player.getInventory().getArmorStack(slot);
+        // PlayerInventory#getArmorStack was removed from the 1.21.11 Yarn API.
+        // Use PlayerEntity#getEquippedStack, which is the supported API for armor.
+        EquipmentSlot[] armorSlots = {
+                EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,
+                EquipmentSlot.LEGS,
+                EquipmentSlot.FEET
+        };
+
+        for (EquipmentSlot slot : armorSlots) {
+            ItemStack stack = mc.player.getEquippedStack(slot);
             if (stack.isEmpty()) continue;
             g.drawItem(stack, x, y);
             g.drawStackOverlay(mc.textRenderer, stack, x, y);

@@ -34,7 +34,7 @@ public final class VulkanClientScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        // Do not draw a full-screen opaque background: the Minecraft world remains visible.
+        // No full-screen opaque background: the Minecraft world remains visible.
         int mainX = 12;
         int mainY = PANEL_TOP;
         int height = this.height - PANEL_TOP - PANEL_BOTTOM;
@@ -77,8 +77,8 @@ public final class VulkanClientScreen extends Screen {
 
     private void drawPanel(GuiGraphics graphics, int x, int y, int width, int height, int color) {
         graphics.fill(x, y, x + width, y + height, color);
-        graphics.fill(x, y, x + width, y + 1, 0x334FFFFFF);
-        graphics.fill(x, y + height - 1, x + width, y + height, 0x223FFFFFF);
+        graphics.fill(x, y, x + width, y + 1, 0x334FFFFF);
+        graphics.fill(x, y + height - 1, x + width, y + height, 0x223FFFFF);
     }
 
     private void drawRow(GuiGraphics graphics, int x, int y, int width, int height, String label,

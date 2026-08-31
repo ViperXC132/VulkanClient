@@ -1,26 +1,30 @@
 package com.viper.vulkanclient;
 
+import com.viper.vulkanclient.core.Category;
+import com.viper.vulkanclient.core.Module;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
 /**
- * First-pass navigation shell for the VulkanClient GUI.
- * The UI deliberately uses Minecraft's GuiGraphics pipeline rather than direct OpenGL calls,
- * keeping the foundation friendly to VulkanMod.
+ * Connected, transparent sidebar GUI. Rendering stays on Minecraft's GuiGraphics path so the
+ * client never assumes an OpenGL context and remains friendly to VulkanMod.
  */
 public final class VulkanClientScreen extends Screen {
-    private static final int MAIN_WIDTH = 250;
-    private static final int CHILD_WIDTH = 300;
-    private static final int PANEL_GAP = 8;
-    private static final int PANEL_TOP = 18;
-    private static final int PANEL_BOTTOM = 18;
+    private static final int MAIN_WIDTH = 220;
+    private static final int MODULE_WIDTH = 300;
+    private static final int SETTINGS_WIDTH = 320;
+    private static final int GAP = 6;
+    private static final int TOP = 10;
+    private static final int BOTTOM = 10;
 
-    private ModuleCategory selectedCategory;
-    private String selectedModule;
+    private Category selectedCategory = Category.GENERAL;
+    private Module selectedModule;
 
     public VulkanClientScreen() {
         super(Component.literal("VulkanClient"));
@@ -28,48 +32,59 @@ public final class VulkanClientScreen extends Screen {
 
     @Override
     protected void init() {
-        selectedCategory = ModuleCategory.GENERAL;
+        selectedCategory = Category.GENERAL;
         selectedModule = null;
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        // No full-screen opaque background: the Minecraft world remains visible.
-        int mainX = 12;
-        int mainY = PANEL_TOP;
-        int height = this.height - PANEL_TOP - PANEL_BOTTOM;
+        int mainX = 8;
+        int mainY = TOP;
+        int height = Math.max(120, this.height - TOP - BOTTOM);
 
-        drawPanel(graphics, mainX, mainY, MAIN_WIDTH, height, 0xD9141820);
-        drawText(graphics, "VULKANCLIENT", mainX + 18, mainY + 18, 0xFFFFFFFF);
-        drawText(graphics, "1.21.11 • Vulkan-ready", mainX + 18, mainY + 36, 0xFF91A0B5);
+        // Deliberately no fullscreen overlay: the world remains visible behind the UI.
+        drawPanel(graphics, mainX, mainY, MAIN_WIDTH, height, 0xD910141B);
+        drawText(graphics, "VULKANCLIENT", mainX + 16, mainY + 16, 0xFFFFFFFF);
+        drawText(graphics, "1.21.11  •  Vulkan ready", mainX + 16, mainY + 34, 0xFF8F9CAF);
 
-        int y = mainY + 68;
-        for (ModuleCategory category : ModuleCategory.values()) {
+        int y = mainY + 62;
+        for (Category category : Category.values()) {
             boolean active = category == selectedCategory;
-            drawRow(graphics, mainX + 10, y, MAIN_WIDTH - 20, 34, category.title(), active, mouseX, mouseY);
-            y += 39;
+            drawRow(graphics, mainX + 8, y, MAIN_WIDTH - 16, 34, pretty(category), active, mouseX, mouseY);
+            y += 38;
         }
 
-        int childX = mainX + MAIN_WIDTH + PANEL_GAP;
-        drawPanel(graphics, childX, mainY, CHILD_WIDTH, height, 0xD910151C);
-        drawText(graphics, selectedCategory.title(), childX + 18, mainY + 18, 0xFFFFFFFF);
-        drawText(graphics, "Modules", childX + 18, mainY + 38, 0xFF91A0B5);
+        int moduleX = mainX + MAIN_WIDTH + GAP;
+        drawPanel(graphics, moduleX, mainY, MODULE_WIDTH, height, 0xD90F141B);
+        drawText(graphics, pretty(selectedCategory), moduleX + 16, mainY + 16, 0xFFFFFFFF);
+        drawText(graphics, "Modules", moduleX + 16, mainY + 34, 0xFF8F9CAF);
 
-        List<String> modules = modulesFor(selectedCategory);
-        y = mainY + 68;
-        for (String module : modules) {
-            boolean active = module.equals(selectedModule);
-            drawRow(graphics, childX + 10, y, CHILD_WIDTH - 20, 34, module, active, mouseX, mouseY);
-            y += 39;
+        List<Module> modules = VulkanClientClient.modules().byCategory(selectedCategory);
+        y = mainY + 62;
+        for (Module module : modules) {
+            boolean active = module == selectedModule;
+            drawRow(graphics, moduleX + 8, y, MODULE_WIDTH - 16, 34, module.name(), active, mouseX, mouseY);
+            if (module.enabled()) {
+                graphics.fill(moduleX + MODULE_WIDTH - 28, y + 10, moduleX + MODULE_WIDTH - 16, y + 22, 0xFF79D6A1);
+            }
+            y += 38;
+            if (y > mainY + height - 34) break;
         }
 
         if (selectedModule != null) {
-            int settingsX = childX + CHILD_WIDTH + PANEL_GAP;
-            drawPanel(graphics, settingsX, mainY, CHILD_WIDTH, height, 0xD90E131A);
-            drawText(graphics, selectedModule, settingsX + 18, mainY + 18, 0xFFFFFFFF);
-            drawText(graphics, "Module settings", settingsX + 18, mainY + 38, 0xFF91A0B5);
-            drawText(graphics, "Settings panel ready", settingsX + 18, mainY + 76, 0xFFD5DCE7);
-            drawText(graphics, "Vulkan-safe rendering foundation", settingsX + 18, mainY + 98, 0xFF91A0B5);
+            int settingsX = moduleX + MODULE_WIDTH + GAP;
+            drawPanel(graphics, settingsX, mainY, SETTINGS_WIDTH, height, 0xD90C1118);
+            drawText(graphics, selectedModule.name(), settingsX + 16, mainY + 16, 0xFFFFFFFF);
+            drawText(graphics, pretty(selectedModule.category()), settingsX + 16, mainY + 34, 0xFF8F9CAF);
+
+            int toggleY = mainY + 68;
+            drawText(graphics, "Enabled", settingsX + 16, toggleY + 9, 0xFFDDE5F0);
+            drawToggle(graphics, settingsX + SETTINGS_WIDTH - 66, toggleY, selectedModule.enabled(), mouseX, mouseY);
+
+            drawText(graphics, "Settings", settingsX + 16, toggleY + 58, 0xFFFFFFFF);
+            drawText(graphics, "Feature settings are registered here.", settingsX + 16, toggleY + 80, 0xFF8F9CAF);
+            drawText(graphics, "Renderer: Minecraft GuiGraphics", settingsX + 16, toggleY + 101, 0xFF8F9CAF);
+            drawText(graphics, "Vulkan-safe path: enabled", settingsX + 16, toggleY + 122, 0xFF8F9CAF);
         }
 
         super.render(graphics, mouseX, mouseY, delta);
@@ -84,65 +99,81 @@ public final class VulkanClientScreen extends Screen {
     private void drawRow(GuiGraphics graphics, int x, int y, int width, int height, String label,
                          boolean selected, int mouseX, int mouseY) {
         boolean hovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
-        int color = selected ? 0xB82E394A : hovered ? 0x55313B4D : 0x0018202C;
-        graphics.fill(x, y, x + width, y + height, color);
-        if (selected) {
-            graphics.fill(x, y, x + 3, y + height, 0xFF8AB4FF);
-        }
+        int fill = selected ? 0xB82D394A : hovered ? 0x55313B4D : 0x0018202C;
+        graphics.fill(x, y, x + width, y + height, fill);
+        if (selected) graphics.fill(x, y, x + 3, y + height, 0xFF8AB4FF);
         drawText(graphics, label, x + 12, y + 11, selected ? 0xFFFFFFFF : 0xFFD2D9E4);
+    }
+
+    private void drawToggle(GuiGraphics graphics, int x, int y, boolean enabled, int mouseX, int mouseY) {
+        boolean hovered = mouseX >= x && mouseX <= x + 50 && mouseY >= y && mouseY <= y + 22;
+        graphics.fill(x, y, x + 50, y + 22, enabled ? 0xFF4C8A6C : 0xFF343B46);
+        if (hovered) graphics.fill(x, y, x + 50, y + 1, 0xFF8AB4FF);
+        int knobX = enabled ? x + 30 : x + 4;
+        graphics.fill(knobX, y + 4, knobX + 16, y + 18, 0xFFF2F5F9);
     }
 
     private void drawText(GuiGraphics graphics, String text, int x, int y, int color) {
         graphics.drawString(this.font, Component.literal(text), x, y, color, false);
     }
 
-    private List<String> modulesFor(ModuleCategory category) {
-        return switch (category) {
-            case GENERAL -> List.of("Client Settings", "Profiles", "Keybinds");
-            case VISUAL -> List.of("Fullbright", "Freelook", "Zoom", "Motion Blur", "Low Fire", "Low Shield", "Nametags", "Beacon Beams", "Hit Color", "Time Changer");
-            case HUD -> List.of("HUD Editor", "FPS", "Ping", "TPS", "Keystrokes", "CPS", "Armor", "Held Item", "Coordinates", "Speed", "Crosshair", "Scoreboard", "Bossbar", "Actionbar", "Hotbar");
-            case PVP -> List.of("Attack Indicator", "Reach", "Combo Counter", "Hit Counter", "Target HUD", "Potion Effects", "Item Cooldown");
-            case HYPIXEL -> List.of("AutoGG", "AutoGF", "AutoGLHF", "AutoTip", "AutoBoop", "LevelHead");
-            case QOL -> List.of("Screenshot Manager", "Screenshot Upload", "Scrollable Tooltips", "Nick Hider", "Chat Timestamps", "Auto Reconnect", "Quick Disconnect");
-            case SETTINGS -> List.of("Interface", "HUD Layouts", "Rendering", "Accessibility", "Config Import / Export");
-        };
+    private static String pretty(Category category) {
+        String value = category.name().toLowerCase(java.util.Locale.ROOT);
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int mainX = 12;
-        int mainY = PANEL_TOP;
-        int y = mainY + 68;
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        if (click.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return super.mouseClicked(click, doubled);
 
-        for (ModuleCategory category : ModuleCategory.values()) {
-            if (mouseX >= mainX + 10 && mouseX <= mainX + MAIN_WIDTH - 10 && mouseY >= y && mouseY <= y + 34) {
+        int mainX = 8;
+        int mainY = TOP;
+        int y = mainY + 62;
+        for (Category category : Category.values()) {
+            if (inside(mouseX, mouseY, mainX + 8, y, MAIN_WIDTH - 16, 34)) {
                 selectedCategory = category;
                 selectedModule = null;
                 return true;
             }
-            y += 39;
+            y += 38;
         }
 
-        int childX = mainX + MAIN_WIDTH + PANEL_GAP;
-        y = mainY + 68;
-        for (String module : modulesFor(selectedCategory)) {
-            if (mouseX >= childX + 10 && mouseX <= childX + CHILD_WIDTH - 10 && mouseY >= y && mouseY <= y + 34) {
+        int moduleX = mainX + MAIN_WIDTH + GAP;
+        y = mainY + 62;
+        List<Module> modules = VulkanClientClient.modules().byCategory(selectedCategory);
+        for (Module module : modules) {
+            if (inside(mouseX, mouseY, moduleX + 8, y, MODULE_WIDTH - 16, 34)) {
                 selectedModule = module;
                 return true;
             }
-            y += 39;
+            y += 38;
+            if (y > mainY + this.height - TOP - BOTTOM - 34) break;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        if (selectedModule != null) {
+            int settingsX = moduleX + MODULE_WIDTH + GAP;
+            if (inside(mouseX, mouseY, settingsX + SETTINGS_WIDTH - 66, mainY + 68, 50, 22)) {
+                selectedModule.setEnabled(!selectedModule.enabled());
+                return true;
+            }
+        }
+
+        return super.mouseClicked(click, doubled);
+    }
+
+    private static boolean inside(double mouseX, double mouseY, int x, int y, int width, int height) {
+        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            this.onClose();
+    public boolean keyPressed(KeyEvent input) {
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+            onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     @Override

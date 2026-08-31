@@ -1,6 +1,7 @@
 package com.viper.vulkanclient.client.module.visual;
 
-import com.viper.vulkanclient.client.module.Module;
+import com.viper.vulkanclient.core.Category;
+import com.viper.vulkanclient.core.Module;
 import net.minecraft.client.MinecraftClient;
 
 public final class FullbrightModule extends Module {

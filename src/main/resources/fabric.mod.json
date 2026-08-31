@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "vulkanclient",
+  "version": "${version}",
+  "name": "VulkanClient",
+  "description": "A professional QoL client for Fabric 1.21.11, designed for VulkanMod compatibility.",
+  "authors": ["ViperXC132"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.viper.vulkanclient.VulkanClient"
+    ],
+    "client": [
+      "com.viper.vulkanclient.VulkanClientClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "fabric-api": ">=0.141.3+1.21.11",
+    "minecraft": "1.21.11"
+  },
+  "suggests": {
+    "vulkanmod": "*"
+  }
+}

@@ -4,10 +4,21 @@ on:
   push:
     branches: ["main"]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vulkanclient-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -17,17 +28,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.2.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Verify Gradle environment
+        run: gradle --version
 
       - name: Build
-        run: gradle build --no-daemon
+        run: gradle build --no-daemon --stacktrace --warning-mode all
 
       - name: Upload JAR
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: VulkanClient
+          name: VulkanClient-${{ github.sha }}
           path: build/libs/*.jar
+          if-no-files-found: error

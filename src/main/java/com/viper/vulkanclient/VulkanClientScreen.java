@@ -2,19 +2,16 @@ package com.viper.vulkanclient;
 
 import com.viper.vulkanclient.core.Category;
 import com.viper.vulkanclient.core.Module;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
-/**
- * Connected, transparent sidebar GUI. Rendering stays on Minecraft's GuiGraphics path so the
- * client never assumes an OpenGL context and remains friendly to VulkanMod.
- */
+/** Transparent, connected sidebar GUI using Yarn mappings and Minecraft's DrawContext API. */
 public final class VulkanClientScreen extends Screen {
     private static final int MAIN_WIDTH = 220;
     private static final int MODULE_WIDTH = 300;
@@ -27,7 +24,7 @@ public final class VulkanClientScreen extends Screen {
     private Module selectedModule;
 
     public VulkanClientScreen() {
-        super(Component.literal("VulkanClient"));
+        super(Text.literal("VulkanClient"));
     }
 
     @Override
@@ -37,13 +34,12 @@ public final class VulkanClientScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    public void render(DrawContext graphics, int mouseX, int mouseY, float delta) {
         int mainX = 8;
         int mainY = TOP;
-        int height = Math.max(120, this.height - TOP - BOTTOM);
+        int panelHeight = Math.max(120, this.height - TOP - BOTTOM);
 
-        // Deliberately no fullscreen overlay: the world remains visible behind the UI.
-        drawPanel(graphics, mainX, mainY, MAIN_WIDTH, height, 0xD910141B);
+        drawPanel(graphics, mainX, mainY, MAIN_WIDTH, panelHeight, 0xD910141B);
         drawText(graphics, "VULKANCLIENT", mainX + 16, mainY + 16, 0xFFFFFFFF);
         drawText(graphics, "1.21.11  •  Vulkan ready", mainX + 16, mainY + 34, 0xFF8F9CAF);
 
@@ -55,7 +51,7 @@ public final class VulkanClientScreen extends Screen {
         }
 
         int moduleX = mainX + MAIN_WIDTH + GAP;
-        drawPanel(graphics, moduleX, mainY, MODULE_WIDTH, height, 0xD90F141B);
+        drawPanel(graphics, moduleX, mainY, MODULE_WIDTH, panelHeight, 0xD90F141B);
         drawText(graphics, pretty(selectedCategory), moduleX + 16, mainY + 16, 0xFFFFFFFF);
         drawText(graphics, "Modules", moduleX + 16, mainY + 34, 0xFF8F9CAF);
 
@@ -68,12 +64,12 @@ public final class VulkanClientScreen extends Screen {
                 graphics.fill(moduleX + MODULE_WIDTH - 28, y + 10, moduleX + MODULE_WIDTH - 16, y + 22, 0xFF79D6A1);
             }
             y += 38;
-            if (y > mainY + height - 34) break;
+            if (y > mainY + panelHeight - 34) break;
         }
 
         if (selectedModule != null) {
             int settingsX = moduleX + MODULE_WIDTH + GAP;
-            drawPanel(graphics, settingsX, mainY, SETTINGS_WIDTH, height, 0xD90C1118);
+            drawPanel(graphics, settingsX, mainY, SETTINGS_WIDTH, panelHeight, 0xD90C1118);
             drawText(graphics, selectedModule.name(), settingsX + 16, mainY + 16, 0xFFFFFFFF);
             drawText(graphics, pretty(selectedModule.category()), settingsX + 16, mainY + 34, 0xFF8F9CAF);
 
@@ -83,20 +79,20 @@ public final class VulkanClientScreen extends Screen {
 
             drawText(graphics, "Settings", settingsX + 16, toggleY + 58, 0xFFFFFFFF);
             drawText(graphics, "Feature settings are registered here.", settingsX + 16, toggleY + 80, 0xFF8F9CAF);
-            drawText(graphics, "Renderer: Minecraft GuiGraphics", settingsX + 16, toggleY + 101, 0xFF8F9CAF);
+            drawText(graphics, "Renderer: Minecraft DrawContext", settingsX + 16, toggleY + 101, 0xFF8F9CAF);
             drawText(graphics, "Vulkan-safe path: enabled", settingsX + 16, toggleY + 122, 0xFF8F9CAF);
         }
 
         super.render(graphics, mouseX, mouseY, delta);
     }
 
-    private void drawPanel(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+    private void drawPanel(DrawContext graphics, int x, int y, int width, int height, int color) {
         graphics.fill(x, y, x + width, y + height, color);
         graphics.fill(x, y, x + width, y + 1, 0x334FFFFF);
         graphics.fill(x, y + height - 1, x + width, y + height, 0x223FFFFF);
     }
 
-    private void drawRow(GuiGraphics graphics, int x, int y, int width, int height, String label,
+    private void drawRow(DrawContext graphics, int x, int y, int width, int height, String label,
                          boolean selected, int mouseX, int mouseY) {
         boolean hovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
         int fill = selected ? 0xB82D394A : hovered ? 0x55313B4D : 0x0018202C;
@@ -105,7 +101,7 @@ public final class VulkanClientScreen extends Screen {
         drawText(graphics, label, x + 12, y + 11, selected ? 0xFFFFFFFF : 0xFFD2D9E4);
     }
 
-    private void drawToggle(GuiGraphics graphics, int x, int y, boolean enabled, int mouseX, int mouseY) {
+    private void drawToggle(DrawContext graphics, int x, int y, boolean enabled, int mouseX, int mouseY) {
         boolean hovered = mouseX >= x && mouseX <= x + 50 && mouseY >= y && mouseY <= y + 22;
         graphics.fill(x, y, x + 50, y + 22, enabled ? 0xFF4C8A6C : 0xFF343B46);
         if (hovered) graphics.fill(x, y, x + 50, y + 1, 0xFF8AB4FF);
@@ -113,8 +109,8 @@ public final class VulkanClientScreen extends Screen {
         graphics.fill(knobX, y + 4, knobX + 16, y + 18, 0xFFF2F5F9);
     }
 
-    private void drawText(GuiGraphics graphics, String text, int x, int y, int color) {
-        graphics.drawString(this.font, Component.literal(text), x, y, color, false);
+    private void drawText(DrawContext graphics, String text, int x, int y, int color) {
+        graphics.drawTextWithShadow(this.textRenderer, text, x, y, color);
     }
 
     private static String pretty(Category category) {
@@ -123,7 +119,7 @@ public final class VulkanClientScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
+    public boolean mouseClicked(Click click, boolean doubled) {
         double mouseX = click.x();
         double mouseY = click.y();
         if (click.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return super.mouseClicked(click, doubled);
@@ -168,16 +164,16 @@ public final class VulkanClientScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent input) {
+    public boolean keyPressed(KeyInput input) {
         if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
-            onClose();
+            close();
             return true;
         }
         return super.keyPressed(input);
     }
 
     @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 }

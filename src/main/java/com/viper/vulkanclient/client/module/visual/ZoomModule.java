@@ -1,8 +1,9 @@
 package com.viper.vulkanclient.client.module.visual;
 
-import com.viper.vulkanclient.client.module.Module;
+import com.viper.vulkanclient.core.Category;
+import com.viper.vulkanclient.core.Module;
 
-/** Zoom state is consumed by the client camera mixin/render hook. */
+/** Zoom state is consumed by the client camera render hook. */
 public final class ZoomModule extends Module {
     public static final float DEFAULT_ZOOM = 4.0f;
     private float zoom = DEFAULT_ZOOM;

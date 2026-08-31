@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.viper.vulkanclient.core.FeatureRegistry;
 import com.viper.vulkanclient.core.Module;
 import com.viper.vulkanclient.core.ModuleManager;
+import com.viper.vulkanclient.module.hud.ClientHudRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -26,11 +27,11 @@ public final class VulkanClientClient implements ClientModInitializer {
                 KEY_CATEGORY
         ));
 
+        ClientHudRenderer.register();
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openMenu.consumeClick()) {
-                if (client.screen == null) {
-                    client.setScreen(new VulkanClientScreen());
-                }
+                if (client.screen == null) client.setScreen(new VulkanClientScreen());
             }
             for (Module module : modules.all()) {
                 if (module.enabled()) module.onTick();

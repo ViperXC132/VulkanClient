@@ -17,7 +17,7 @@ public final class VulkanClientClient implements ClientModInitializer {
             "key.vulkanclient.open_menu",
             InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_SHIFT,
-            "key.category.vulkanclient.client"
+            KeyBinding.Category.MISC
     );
     private static ModuleManager modules;
 

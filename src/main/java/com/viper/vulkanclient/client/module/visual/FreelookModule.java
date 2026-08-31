@@ -1,10 +1,11 @@
 package com.viper.vulkanclient.client.module.visual;
 
-import com.viper.vulkanclient.client.module.Module;
+import com.viper.vulkanclient.core.Category;
+import com.viper.vulkanclient.core.Module;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.Perspective;
 
-/** Camera-only freelook: decouples view rotation from player rotation while held. */
+/** Camera-only freelook state consumed by the camera hook. */
 public final class FreelookModule extends Module {
     private float cameraYaw;
     private float cameraPitch;

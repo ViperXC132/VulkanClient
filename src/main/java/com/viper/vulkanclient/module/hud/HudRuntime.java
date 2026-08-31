@@ -6,7 +6,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 
-/** Shared HUD runtime using Minecraft's normal DrawContext APIs. */
+/** Shared HUD runtime using Minecraft's normal Yarn DrawContext APIs. */
 public final class HudRuntime {
     private HudRuntime() {}
 
@@ -18,11 +18,11 @@ public final class HudRuntime {
         y = text(g, mc, "hud_coordinates", "XYZ: " + fmt(mc.player.getX()) + " " + fmt(mc.player.getY()) + " " + fmt(mc.player.getZ()), x, y);
         y = text(g, mc, "hud_speed_bps", "BPS: " + fmt(speed(mc.player)), x, y);
         y = text(g, mc, "hud_yaw_pitch", "Yaw/Pitch: " + fmt(mc.player.getYaw()) + " / " + fmt(mc.player.getPitch()), x, y);
-        y = text(g, mc, "hud_facing_direction", "Facing: " + mc.player.getHorizontalFacing().getName(), x, y);
+        y = text(g, mc, "hud_facing_direction", "Facing: " + mc.player.getHorizontalFacing().asString(), x, y);
         y = text(g, mc, "hud_health", "Health: " + fmt(mc.player.getHealth()), x, y);
         y = text(g, mc, "hud_hunger", "Food: " + mc.player.getHungerManager().getFoodLevel(), x, y);
         y = text(g, mc, "hud_xp_level", "Level: " + mc.player.experienceLevel, x, y);
-        y = text(g, mc, "hud_dimension", "Dimension: " + mc.player.getWorld().getRegistryKey().getValue(), x, y);
+        y = text(g, mc, "hud_dimension", "Dimension: " + mc.player.getEntityWorld().getRegistryKey().getValue(), x, y);
         y = text(g, mc, "hud_real_time", java.time.LocalTime.now().withNano(0).toString(), x, y);
         y = text(g, mc, "hud_keystrokes", keys(mc), x, y);
         y = text(g, mc, "hud_cps", "CPS: " + ClickCounter.cps(), x, y);
@@ -38,7 +38,7 @@ public final class HudRuntime {
 
     private static void renderArmor(DrawContext g, MinecraftClient mc, int x, int y) {
         for (int slot = 3; slot >= 0; slot--) {
-            ItemStack stack = mc.player.getInventory().getArmorStack(slot);
+            ItemStack stack = mc.player.getInventory().armor.get(slot);
             if (stack.isEmpty()) continue;
             g.drawItem(stack, x, y);
             g.drawItemInSlot(mc.textRenderer, stack, x, y);
